@@ -1,6 +1,8 @@
 #ifndef XAX_IMPL_H
 #define XAX_IMPL_H
 
+#include <sys/types.h>
+
 #define OPEN_MEM(proc_name) \
   pid_t pid = get_pid(proc_name); \
   if (pid <= 0) { \
