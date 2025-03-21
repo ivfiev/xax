@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <string.h>
+#include <unistd.h>
 #include "hashtable.h"
 #include "scan.h"
 #include "args.h"

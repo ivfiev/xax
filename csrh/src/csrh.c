@@ -1,14 +1,21 @@
 #include <stdio.h>
+#include <unistd.h>
 #include "args.h"
 #include "proc.h"
 #include "util.h"
 #include "impl.h"
 #include <string.h>
+#include <errno.h>
 
 #define START_ADDR 0x100000
-#define GLOBAL_STATE_PTR_ADDR (LIBCLIENT_BASE + 0x3aa6690 - START_ADDR)
-#define LOCAL_PLAYER_CTL_PTR_ADDR (LIBCLIENT_BASE + 0x3aa1618 - START_ADDR)
-#define PAWN_ARRAY_ADDR (LIBCLIENT_BASE + 0x390d138 - START_ADDR)
+// libclient2
+// #define GLOBAL_STATE_PTR_ADDR (LIBCLIENT_BASE + 0x3aa6690 - START_ADDR)
+// #define LOCAL_PLAYER_CTL_PTR_ADDR (LIBCLIENT_BASE + 0x3aa1618 - START_ADDR)
+// #define PAWN_ARRAY_ADDR (LIBCLIENT_BASE + 0x390d138 - START_ADDR)
+
+static uintptr_t GLOBAL_STATE_PTR_ADDR;
+static uintptr_t LOCAL_PLAYER_CTL_PTR_ADDR;
+static uintptr_t PAWN_ARRAY_ADDR;
 
 int MEM_FD;
 uintptr_t LIBCLIENT_BASE;
@@ -25,6 +32,38 @@ struct entity {
 
 static union word64 read_word(uintptr_t addr) {
   return read_mem_word64(MEM_FD, addr);
+}
+
+void read_addr(uint8_t text[], size_t text_len, uintptr_t *addr, uint8_t sig[], size_t sig_len) {
+  for (int i = 0; i < text_len; i++) {
+    int j;
+    for (j = 0; j < sig_len; j++) {
+      if (text[i + j] != sig[j]) {
+        break;
+      }
+    }
+    if (j == sig_len) {
+      union word32 w;
+      uintptr_t ip = i + sig_len + sizeof(w.bytes);
+      memcpy(w.bytes, text + i + sig_len, sizeof(w.bytes));
+      *addr = LIBCLIENT_BASE + ip + w.int32;
+      break;
+    }
+  }
+}
+
+void read_addrs(void) {
+  const size_t text_len = 70000000;
+  uint8_t global_sig[] = {0x7e, 0x18, 0x48, 0x8d, 0x05};
+  uint8_t player_sig[] = {0x83, 0xff, 0xff, 0x74, 0x0b, 0x48, 0x8b, 0x05};
+  uint8_t pawn_sig[] = {0x83, 0xf9, 0xff, 0x74, 0x4d, 0x48, 0x8b, 0x35};
+  uint8_t *text = malloc(text_len);
+  lseek(MEM_FD, (off_t)LIBCLIENT_BASE, SEEK_SET);
+  read(MEM_FD, text, text_len);
+  read_addr(text, text_len, &GLOBAL_STATE_PTR_ADDR, global_sig, SIZEARR(global_sig));
+  read_addr(text, text_len, &LOCAL_PLAYER_CTL_PTR_ADDR, player_sig, SIZEARR(player_sig));
+  read_addr(text, text_len, &PAWN_ARRAY_ADDR, pawn_sig, SIZEARR(pawn_sig));
+  free(text);
 }
 
 size_t get_ctls(uintptr_t ctls[]) {
@@ -49,7 +88,7 @@ static void read_entity(uintptr_t ctl, struct entity *e) {
   uintptr_t local_ctl = read_word(LOCAL_PLAYER_CTL_PTR_ADDR).ptr64;
   uintptr_t pawn = get_pawn(ctl);
   e->is_local = ctl == local_ctl;
-  e->is_alive = read_word(ctl + 0x99c).int32;
+  e->is_alive = read_word(ctl + 0x9a4).int32;
   int team = read_word(ctl + 0x55b).int32;
   e->team = team == 2 ? 'T' : team == 3 ? 'C' : '_';
   uintptr_t offsets_xyz[] = {0x38, 0x70};
@@ -95,10 +134,10 @@ static void main_loop(void) {
 
 static void run(void) {
   OPEN_MEM("cs2$");
-  READ_DS(1536);
   MEM_FD = fd;
   LIBCLIENT_BASE = get_base_addr(pid, "libclient");
   disable_stderr();
+  read_addrs();
   main_loop();
 }
 
