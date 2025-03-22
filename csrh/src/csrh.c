@@ -146,5 +146,4 @@ static void init(void) {
   args_add("csrh", run);
 }
 // decouple pids
-// sigscan for global pointers
 // show bomb/more info

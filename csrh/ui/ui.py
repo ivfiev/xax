@@ -5,6 +5,10 @@ import sys
 import time
 from math import cos, sin, pi
 from pynput import mouse
+from datetime import datetime, UTC
+
+def utcnow():
+    return int(datetime.now(UTC).timestamp() * 1000)
 
 
 class FadingCircle:
@@ -14,6 +18,8 @@ class FadingCircle:
         self.y0 = 0
         self.x1 = x1
         self.y1 = y1
+        self.xr = 0
+        self.yr = 0
         self.t = t
         self.col = col
         self.size = 14
@@ -26,7 +32,7 @@ class FadingCircle:
             self.y0 + self.size / 2,
             fill=self._get_color(), outline=''
         )
-        self.fade()
+        self.canvas.after(100, self.fade)
 
     def _get_color(self):
         col = int(255 * self.alpha)
@@ -52,6 +58,8 @@ class FadingCircle:
         (x, y) = (self.x1 - x2, self.y1 - y2)
         t = -t
         (x, y) = (x * cos(t) - y * sin(t), x * sin(t) + y * cos(t))
+        self.xr = x
+        self.yr = y
         (x, y) = ((x + 4000.0) / 16.0, (4000.0 - y) / 16.0)
         self.x0 = x
         self.y0 = y
@@ -76,6 +84,7 @@ class Overlay(tk.Tk):
         self.canvas = tk.Canvas(self, width=500, height=500, bg='black', highlightthickness=0)
         self.canvas.pack()
         self.circles = []
+        self.enemies = []
         self.stdin_thread = threading.Thread(target=self.read_stdin, daemon=True)
         self.stdin_thread.start()
         self.hidden = False
@@ -103,6 +112,7 @@ class Overlay(tk.Tk):
                 else:
                     self.draw_circle(x, y, self.prev[0], self.prev[1], self.angle, col)
             self.circles = [c for c in self.circles if c.alpha > 0]
+            self.enemies = set((c.xr, c.yr) for c in self.circles if c.alpha > 0.95 and c.col != 'ME')
             if not line:
                 time.sleep(0.01)
 
@@ -121,10 +131,42 @@ class Overlay(tk.Tk):
             self.hidden = True
 
 
+class Aim():
+    def __init__(self, get_entities):
+        self.get_entities = get_entities
+        self.pressed = False
+        self.last_press = 0
+
+    def on_click(self, press):
+        self.pressed = press
+        if press:
+            self.last_press = utcnow()
+        es = self.get_entities()
+        if not es:
+            return
+        (a, x, y) = min((abs(e[0]), e[0], e[1]) for e in es)
+        print(f'{x} {y}', file=sys.stderr)
+        if a <= 40 and y > 0:
+            dx = x * 80 / y
+            print(f'{int(round(dx))} 0')
+            sys.stdout.flush()
+
+    def on_iter(self):
+        if utcnow() - self.last_press < 1000:
+            self.on_click(False)
+        # if self.pressed:dddddd
+        #     self.on_click(True)
+
+def aim_loop(overlay, aim):
+    aim.on_iter()
+    overlay.after(2, lambda: aim_loop(overlay, aim))
+
+
 class MouseListener():
-    def __init__(self, overlay):
+    def __init__(self, overlay, aim):
         self.overlay = overlay
-        self.listener = mouse.Listener(on_move=self.on_move, on_scroll=self.on_scroll)
+        self.aim = aim
+        self.listener = mouse.Listener(on_move=self.on_move, on_scroll=self.on_scroll, on_click=self.on_click)
         self.listener.start()
         self.timer = False
 
@@ -136,6 +178,9 @@ class MouseListener():
 
     def on_scroll(self, _, __, ___, ____):
         self.temp_hide()
+
+    def on_click(self, x, y, _, press):
+        self.aim.on_click(press)
 
     def temp_hide(self):
         def on_timeout():
@@ -150,10 +195,12 @@ class MouseListener():
 
 if __name__ == "__main__":
     overlay = Overlay()
-    listener = MouseListener(overlay)
+    aim = Aim(lambda: overlay.enemies)
+    listener = MouseListener(overlay, aim)
     overlay.protocol("WM_DELETE_WINDOW", overlay.on_closing)
     signal.signal(signal.SIGINT, lambda x, y: overlay.destroy())
     tk_check = lambda: overlay.after(100, tk_check)
     overlay.after(100, tk_check)
+    aim_loop(overlay, aim)
     overlay.bind_all("<Control-c>", lambda e: overlay.destroy())
     overlay.mainloop()
