@@ -90,6 +90,7 @@ class Overlay(tk.Tk):
         self.hidden = False
 
     def read_stdin(self):
+        my_col = None
         while True:
             line = sys.stdin.readline()
             if line:
@@ -101,6 +102,8 @@ class Overlay(tk.Tk):
                     me = True
                 [x, y, yaw] = map(lambda xy: float(xy), coords.split(','))
                 col = 'ME' if meta.startswith('1') else 'T' if 'T' in meta else 'C'
+                if col == 'ME':
+                    my_col = 'T' if 'T' in meta else 'C'
                 if me:
                     t = yaw / 180 * pi - pi / 2.0
                     self.prev = (x, y)
@@ -112,7 +115,8 @@ class Overlay(tk.Tk):
                 else:
                     self.draw_circle(x, y, self.prev[0], self.prev[1], self.angle, col)
             self.circles = [c for c in self.circles if c.alpha > 0]
-            self.enemies = set((c.xr, c.yr) for c in self.circles if c.alpha > 0.95 and c.col != 'ME')
+            self.enemies = set((c.xr, c.yr) for c in self.circles if c.alpha > 0.95 and c.col != my_col and c.col != 'ME')
+            # print(len(self.enemies), file=sys.stderr)
             if not line:
                 time.sleep(0.01)
 
