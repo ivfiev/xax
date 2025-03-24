@@ -46,7 +46,7 @@ class FadingCircle:
 
     def fade(self):
         if self.alpha > 0:
-            self.alpha -= 0.20
+            self.alpha -= 0.51
             if self.alpha < 0:
                 self.alpha = 0
             self.canvas.itemconfig(self.circle, fill=self._get_color())
@@ -136,34 +136,23 @@ class Overlay(tk.Tk):
 
 
 class Aim():
-    def __init__(self, get_entities):
-        self.get_entities = get_entities
-        self.pressed = False
-        self.last_press = 0
+    def __init__(self, get_enemies):
+        self.get_enemies = get_enemies
 
     def on_click(self, press):
-        self.pressed = press
-        if press:
-            self.last_press = utcnow()
-        es = self.get_entities()
+        if not press:
+            return
+        es = self.get_enemies()
+        # print(es, file=sys.stderr)
         if not es:
             return
         (a, x, y) = min((abs(e[0]), e[0], e[1]) for e in es)
-        print(f'{x} {y}', file=sys.stderr)
-        if a <= 40 and y > 0:
-            dx = x * 80 / y
+        # print(f'{x} {y}', file=sys.stderr)
+        # print(f'{x2} {y2}', file=sys.stderr)
+        if a <= 120 and y > 0:
+            dx = x * 1200 / y
             print(f'{int(round(dx))} 0')
             sys.stdout.flush()
-
-    def on_iter(self):
-        if utcnow() - self.last_press < 1000:
-            self.on_click(False)
-        # if self.pressed:dddddd
-        #     self.on_click(True)
-
-def aim_loop(overlay, aim):
-    aim.on_iter()
-    overlay.after(2, lambda: aim_loop(overlay, aim))
 
 
 class MouseListener():
@@ -205,6 +194,5 @@ if __name__ == "__main__":
     signal.signal(signal.SIGINT, lambda x, y: overlay.destroy())
     tk_check = lambda: overlay.after(100, tk_check)
     overlay.after(100, tk_check)
-    aim_loop(overlay, aim)
     overlay.bind_all("<Control-c>", lambda e: overlay.destroy())
     overlay.mainloop()
