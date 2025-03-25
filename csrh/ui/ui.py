@@ -3,35 +3,17 @@ import tkinter as tk
 import threading
 import sys
 import time
-from math import cos, sin, pi
+import model
 from pynput import mouse
-from datetime import datetime, UTC
-
-def utcnow():
-    return int(datetime.now(UTC).timestamp() * 1000)
-
 
 class FadingCircle:
-    def __init__(self, canvas, x1, y1, x2, y2, t, col):
+    def __init__(self, canvas, x, y, col):
         self.canvas = canvas
-        self.x0 = 0
-        self.y0 = 0
-        self.x1 = x1
-        self.y1 = y1
-        self.xr = 0
-        self.yr = 0
-        self.t = t
+        self.x = x
+        self.y = y
         self.col = col
         self.size = 14
         self.alpha = 1.0
-        self.recalc_effective(x2, y2, t)
-        self.circle = self.canvas.create_oval(
-            self.x0 - self.size / 2,
-            self.y0 - self.size / 2,
-            self.x0 + self.size / 2,
-            self.y0 + self.size / 2,
-            fill=self._get_color(), outline=''
-        )
         self.canvas.after(100, self.fade)
 
     def _get_color(self):
@@ -54,74 +36,52 @@ class FadingCircle:
         else:
             self.canvas.delete(self.circle)
 
-    def recalc_effective(self, x2, y2, t):
-        (x, y) = (self.x1 - x2, self.y1 - y2)
-        t = -t
-        (x, y) = (x * cos(t) - y * sin(t), x * sin(t) + y * cos(t))
-        self.xr = x
-        self.yr = y
-        (x, y) = ((x + 4000.0) / 16.0, (4000.0 - y) / 16.0)
-        self.x0 = x
-        self.y0 = y
+    def rebase(self, x0, y0, t0):
+        (self.x, self.y) = model.rebase(self.x, self.y, x0, y0, t0)
 
     def place(self):
-        self.canvas.coords(self.circle,
-                           round(self.x0 - self.size / 2),
-                           round(self.y0 - self.size / 2),
-                           round(self.x0 + self.size / 2),
-                           round(self.y0 + self.size / 2))
-
+        if self.circle:
+            self.canvas.coords(self.circle,
+                round(self.x - self.size / 2),
+                round(self.y - self.size / 2),
+                round(self.x + self.size / 2),
+                round(self.y + self.size / 2))
+        else:
+            self.circle = self.canvas.create_oval(
+                self.x - self.size / 2,
+                self.y - self.size / 2,
+                self.x + self.size / 2,
+                self.y + self.size / 2,
+                fill=self._get_color(), outline='')   
 
 class Overlay(tk.Tk):
     def __init__(self):
         super().__init__()
-        self.prev = (0.0, 0.0)
-        self.angle = 0.0
+        self.circles = []
         self.overrideredirect(True)
         self.attributes('-topmost', True)
         self.geometry('500x500+40+40')
         self.config(bg='black')
         self.canvas = tk.Canvas(self, width=500, height=500, bg='black', highlightthickness=0)
         self.canvas.pack()
-        self.circles = []
-        self.enemies = []
         self.stdin_thread = threading.Thread(target=self.read_stdin, daemon=True)
         self.stdin_thread.start()
         self.hidden = False
 
     def read_stdin(self):
-        my_col = None
         while True:
             line = sys.stdin.readline()
             if line:
-                if not line.endswith(',1\n'):
-                    continue
-                me = False
-                [coords, meta] = line.split(':')
-                if meta.startswith('1'):
-                    me = True
-                [x, y, yaw] = map(lambda xy: float(xy), coords.split(','))
-                col = 'ME' if meta.startswith('1') else 'T' if 'T' in meta else 'C'
-                if col == 'ME':
-                    my_col = 'T' if 'T' in meta else 'C'
-                if me:
-                    t = yaw / 180 * pi - pi / 2.0
-                    self.prev = (x, y)
-                    self.angle = t
-                    for circle in self.circles:
-                        circle.recalc_effective(x, y, t)
-                        circle.place()
-                    self.draw_circle(x, y, x, y, t, col)
-                else:
-                    self.draw_circle(x, y, self.prev[0], self.prev[1], self.angle, col)
-            self.circles = [c for c in self.circles if c.alpha > 0]
-            self.enemies = set((c.xr, c.yr) for c in self.circles if c.alpha > 0.95 and c.col != my_col and c.col != 'ME')
-            # print(len(self.enemies), file=sys.stderr)
-            if not line:
+                model.parse_players(line)
+                for c in self.circles:
+                    c.rebase(model.me.x, model.me.y, model.me.t)
+                for p in model.players:
+                    self.circles.append(FadingCircle(p.x, p.y, p.color))
+                for c in self.circles:
+                    c.place()
+            else:
                 time.sleep(0.01)
-
-    def draw_circle(self, x1, y1, x2, y2, t, c):
-        self.circles.append(FadingCircle(self.canvas, x1, y1, x2, y2, t, c))
+            self.circles = [c for c in self.circles if c.alpha > 0]
 
     def on_closing(self):
         self.destroy()

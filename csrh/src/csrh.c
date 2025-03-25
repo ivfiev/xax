@@ -23,6 +23,7 @@ uintptr_t LIBCLIENT_BASE;
 struct entity {
   uintptr_t ctl;
   uintptr_t pawn;
+  int id;
   int is_local;
   float x, y;
   float yaw;
@@ -84,7 +85,8 @@ uintptr_t get_pawn(uintptr_t ctl) {
   return read_word(pawn_ptr).ptr64;
 }
 
-static void read_entity(uintptr_t ctl, struct entity *e) {
+static void read_entity(uintptr_t ctl, int id, struct entity *e) {
+  e->id = id;
   uintptr_t local_ctl = read_word(LOCAL_PLAYER_CTL_PTR_ADDR).ptr64;
   uintptr_t pawn = get_pawn(ctl);
   e->is_local = ctl == local_ctl;
@@ -108,7 +110,7 @@ size_t read_players(struct entity *players) {
   uintptr_t ctls[64];
   size_t ctl_count = get_ctls(ctls);
   for (int i = 0; i < ctl_count; i++) {
-    read_entity(ctls[i], &e);
+    read_entity(ctls[i], i, &e);
     if (e.is_alive && (e.team == 'T' || e.team == 'C')) {
       memcpy(&players[count++], &e, sizeof(e));
     }
@@ -117,7 +119,7 @@ size_t read_players(struct entity *players) {
 }
 
 static void print_player(struct entity *player) {
-  printf("%f,%f,%f:%d,%c,%d\n", player->x, player->y, player->yaw, player->is_local, player->team, player->is_alive);
+  printf("%d:%f,%f,%f:%d,%c,%d", player->id, player->x, player->y, player->yaw, player->is_local, player->team, player->is_alive);
 }
 
 static void main_loop(void) {
@@ -126,6 +128,9 @@ static void main_loop(void) {
     size_t count = read_players(players);
     for (int i = 0; i < count; i++) {
       print_player(&players[i]);
+      if (i < count - 1) {
+        putchar('|');
+      }
     }
     fflush(stdout);
     msleep(40);
@@ -136,7 +141,7 @@ static void run(void) {
   OPEN_MEM("cs2$");
   MEM_FD = fd;
   LIBCLIENT_BASE = get_base_addr(pid, "libclient");
-  disable_stderr();
+  disable_stderr(); // TODO
   read_addrs();
   main_loop();
 }
