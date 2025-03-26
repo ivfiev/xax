@@ -128,9 +128,7 @@ static void main_loop(void) {
     size_t count = read_players(players);
     for (int i = 0; i < count; i++) {
       print_player(&players[i]);
-      if (i < count - 1) {
-        putchar('|');
-      }
+      putchar(i < count - 1 ? '|' : '\n');
     }
     fflush(stdout);
     msleep(40);

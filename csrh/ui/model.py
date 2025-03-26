@@ -18,6 +18,7 @@ class Entity():
         (self.xr, self.yr) = rebase(self.x, self.y, x, y, y)
     
 def parse_players(line, record_history=False):
+    global me, players, histories
     if not line.endswith(',1\n'):
         return
     raw_strs = line.split('|')
@@ -27,12 +28,13 @@ def parse_players(line, record_history=False):
         is_me = meta.startswith('1')
         [x, y, yaw] = map(lambda xy: float(xy), coords.split(','))
         color = 'T' if 'T' in meta else 'C'
-        e = Entity(x, y, yaw, color)
+        t = yaw / 180 * pi - pi / 2.0
+        e = Entity(x, y, t, color)
         if is_me:
             me = e
         else:
             new_players[id] = e
-    for e in new_players:
+    for id, e in new_players.items():
         e.rebase(me.x, me.y, me.t)
     players = new_players
     if record_history:

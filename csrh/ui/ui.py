@@ -9,11 +9,14 @@ from pynput import mouse
 class FadingCircle:
     def __init__(self, canvas, x, y, col):
         self.canvas = canvas
-        self.x = x
-        self.y = y
+        self.x0 = x
+        self.y0 = y
+        self.x1 = None
+        self.y1 = None
         self.col = col
         self.size = 14
         self.alpha = 1.0
+        self.circle = None
         self.canvas.after(100, self.fade)
 
     def _get_color(self):
@@ -37,21 +40,22 @@ class FadingCircle:
             self.canvas.delete(self.circle)
 
     def rebase(self, x0, y0, t0):
-        (self.x, self.y) = model.rebase(self.x, self.y, x0, y0, t0)
+        (self.x1, self.y1) = model.rebase(self.x0, self.y0, x0, y0, t0)
+        (self.x1, self.y1) = ((self.x1 + 4000.0) / 16.0, (4000.0 - self.y1) / 16.0)
 
     def place(self):
         if self.circle:
             self.canvas.coords(self.circle,
-                round(self.x - self.size / 2),
-                round(self.y - self.size / 2),
-                round(self.x + self.size / 2),
-                round(self.y + self.size / 2))
+                round(self.x1 - self.size / 2),
+                round(self.y1 - self.size / 2),
+                round(self.x1 + self.size / 2),
+                round(self.y1 + self.size / 2))
         else:
             self.circle = self.canvas.create_oval(
-                self.x - self.size / 2,
-                self.y - self.size / 2,
-                self.x + self.size / 2,
-                self.y + self.size / 2,
+                self.x1 - self.size / 2,
+                self.y1 - self.size / 2,
+                self.x1 + self.size / 2,
+                self.y1 + self.size / 2,
                 fill=self._get_color(), outline='')   
 
 class Overlay(tk.Tk):
@@ -73,11 +77,11 @@ class Overlay(tk.Tk):
             line = sys.stdin.readline()
             if line:
                 model.parse_players(line)
+                for id, p in model.players.items():
+                    self.circles.append(FadingCircle(self.canvas, p.x, p.y, p.color))
+                self.circles.append(FadingCircle(self.canvas, model.me.x, model.me.y, 'ME'))
                 for c in self.circles:
                     c.rebase(model.me.x, model.me.y, model.me.t)
-                for p in model.players:
-                    self.circles.append(FadingCircle(p.x, p.y, p.color))
-                for c in self.circles:
                     c.place()
             else:
                 time.sleep(0.01)
@@ -133,7 +137,7 @@ class MouseListener():
         self.temp_hide()
 
     def on_click(self, x, y, _, press):
-        self.aim.on_click(press)
+        ... # self.aim.on_click(press)
 
     def temp_hide(self):
         def on_timeout():
