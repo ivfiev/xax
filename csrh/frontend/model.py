@@ -15,9 +15,9 @@ class Entity():
         self.yr = None
 
     def rebase(self, x, y, t):
-        (self.xr, self.yr) = rebase(self.x, self.y, x, y, y)
+        (self.xr, self.yr) = rebase(self.x, self.y, x, y, t)
     
-def parse_players(line, record_history=False):
+def parse_players(line, record_history=False, max_records=50):
     global me, players, histories
     if not line.endswith(',1\n'):
         return
@@ -39,7 +39,7 @@ def parse_players(line, record_history=False):
     players = new_players
     if record_history:
         histories.append(new_players)
-        if len(histories) > max:
+        if len(histories) > max_records:
             histories = histories[1:]
 
 def rebase(x, y, x0, y0, t0):
