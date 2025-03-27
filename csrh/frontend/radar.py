@@ -98,32 +98,10 @@ class Overlay(tk.Tk):
             self.withdraw()
             self.hidden = True
 
-
-class Aim():
-    def __init__(self, get_enemies):
-        self.get_enemies = get_enemies
-
-    def on_click(self, press):
-        if not press:
-            return
-        es = self.get_enemies()
-        # print(es, file=sys.stderr)
-        if not es:
-            return
-        (a, x, y) = min((abs(e[0]), e[0], e[1]) for e in es)
-        # print(f'{x} {y}', file=sys.stderr)
-        # print(f'{x2} {y2}', file=sys.stderr)
-        if a <= 120 and y > 0:
-            dx = x * 1200 / y
-            print(f'{int(round(dx))} 0')
-            sys.stdout.flush()
-
-
 class MouseListener():
-    def __init__(self, overlay, aim):
+    def __init__(self, overlay):
         self.overlay = overlay
-        self.aim = aim
-        self.listener = mouse.Listener(on_move=self.on_move, on_scroll=self.on_scroll, on_click=self.on_click)
+        self.listener = mouse.Listener(on_move=self.on_move, on_scroll=self.on_scroll)
         self.listener.start()
         self.timer = False
 
@@ -136,9 +114,6 @@ class MouseListener():
     def on_scroll(self, _, __, ___, ____):
         self.temp_hide()
 
-    def on_click(self, x, y, _, press):
-        ... # self.aim.on_click(press)
-
     def temp_hide(self):
         def on_timeout():
             self.overlay.toggle(True)
@@ -149,11 +124,9 @@ class MouseListener():
             self.overlay.toggle(False)
             threading.Timer(3.0, on_timeout).start()
 
-
 if __name__ == "__main__":
     overlay = Overlay()
-    aim = Aim(lambda: overlay.enemies)
-    listener = MouseListener(overlay, aim)
+    listener = MouseListener(overlay)
     overlay.protocol("WM_DELETE_WINDOW", overlay.on_closing)
     signal.signal(signal.SIGINT, lambda x, y: overlay.destroy())
     tk_check = lambda: overlay.after(100, tk_check)

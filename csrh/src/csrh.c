@@ -131,7 +131,7 @@ static void main_loop(void) {
       putchar(i < count - 1 ? '|' : '\n');
     }
     fflush(stdout);
-    msleep(40);
+    msleep(25);
   }
 }
 

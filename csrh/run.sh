@@ -1,2 +1,2 @@
-. ./ui/.venv/bin/activate
-sudo ./build/csrh csrh | python ui/ui.py #| sudo ./build/mouse
+. ./frontend/.venv/bin/activate
+sudo ./build/csrh csrh | tee >(python frontend/radar.py) | python frontend/aim.py | sudo ./build/mouse
