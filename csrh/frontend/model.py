@@ -1,10 +1,6 @@
 import datetime
 from math import *
 
-me = None
-players = {}
-histories = []
-
 class Entity():
     def __init__(self, x, y, t, color):
         self.x = x
@@ -17,6 +13,10 @@ class Entity():
     def rebase(self, x, y, t):
         (self.xr, self.yr) = rebase(self.x, self.y, x, y, t)
     
+me = Entity(0, 0, 0, '')
+players = {}
+histories = []
+
 def parse_players(line, record_history=False, max_records=50):
     global me, players, histories
     if not line.endswith(',1\n'):

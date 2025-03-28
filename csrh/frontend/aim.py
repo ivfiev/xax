@@ -7,16 +7,23 @@ import model
 from pynput import mouse
 
 class Aim():
-    def on_click(self, press):
+    def on_click(self, press):      # TODO active while pressed/tracker button
         if not press:
             return
-        if not model.players:
+        enemies = [id, e for id, e in model.players.items() if e.color != model.me.color]
+        if not enemies:
             return
-        (a, x, y) = min((abs(e.xr), e.xr, e.yr) for _, e in model.players.items())
-        print(f'{x} {y}', file=sys.stderr)
-        if a <= 120 and y > 0:
-            dx = x * 800 / y
-            print(f'{int(round(dx))} 0')
+        (a, x, y, id) = min((abs(e.xr), e.xr, e.yr, id) for id, e in enemies)
+        # print(len(model.histories), file=sys.stderr)
+        if a <= 90 and y > 0:
+            dx, dy = 0.0, 0.0
+            for i in range(len(model.histories) - 3, len(model.histories) - 1):
+                dx += model.histories[i + 1][id].xr - model.histories[i][id].xr
+                dy += model.histories[i + 1][id].yr - model.histories[i][id].yr
+            x_target = x + 1.5 * dx
+            y_target = y + 1.5 * dy
+            mouse_px = x_target * 800 / y_target # TODO use angles instead
+            print(f'{int(round(mouse_px))} 0')
             sys.stdout.flush()
 
 class MouseListener():
@@ -33,4 +40,4 @@ if __name__ == "__main__":
     listener = MouseListener(aim)
     while True:
         line = sys.stdin.readline()
-        model.parse_players(line, True)
+        model.parse_players(line, record_history=True)
