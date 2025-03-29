@@ -139,7 +139,7 @@ static void run(void) {
   OPEN_MEM("cs2$");
   MEM_FD = fd;
   LIBCLIENT_BASE = get_base_addr(pid, "libclient");
-  disable_stderr(); // TODO
+  //disable_stderr();
   read_addrs();
   main_loop();
 }
