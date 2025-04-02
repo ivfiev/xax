@@ -1,3 +1,4 @@
+import os
 import signal
 import tkinter as tk
 import threading
@@ -5,6 +6,7 @@ import sys
 import time
 import model
 from pynput import mouse
+from fcntl import fcntl, F_GETFL, F_SETFL
 
 class FadingCircle:
     def __init__(self, canvas, x, y, col):
@@ -17,7 +19,8 @@ class FadingCircle:
         self.size = 14
         self.alpha = 1.0
         self.circle = None
-        self.canvas.after(100, self.fade)
+        self.visible = True
+        self.canvas.after(50, self.remove)
 
     def _get_color(self):
         col = int(255 * self.alpha)
@@ -29,15 +32,9 @@ class FadingCircle:
             return f'#00{col:02x}00'
         return f'#{0:02x}{0:02x}{0:02x}'
 
-    def fade(self):
-        if self.alpha > 0:
-            self.alpha -= 0.51
-            if self.alpha < 0:
-                self.alpha = 0
-            self.canvas.itemconfig(self.circle, fill=self._get_color())
-            self.canvas.after(100, self.fade)
-        else:
-            self.canvas.delete(self.circle)
+    def remove(self):
+        self.visible = False
+        self.canvas.delete(self.circle)
 
     def rebase(self, x0, y0, t0):
         (self.x1, self.y1) = model.rebase(self.x0, self.y0, x0, y0, t0)
@@ -71,10 +68,24 @@ class Overlay(tk.Tk):
         self.stdin_thread = threading.Thread(target=self.read_stdin, daemon=True)
         self.stdin_thread.start()
         self.hidden = False
+        self.init()
+
+    def init(self):
+        fd = sys.stdin.fileno()
+        flags = fcntl(fd, F_GETFL)
+        fcntl(fd, F_SETFL, flags | os.O_NONBLOCK)
+
+    def read_latest(self):
+        line = None
+        while True:
+            tmp = sys.stdin.readline()
+            if not tmp:
+                return line
+            line = tmp
 
     def read_stdin(self):
         while True:
-            line = sys.stdin.readline()
+            line = self.read_latest()
             if line:
                 model.parse_players(line)
                 for id, p in model.players.items():
@@ -83,9 +94,8 @@ class Overlay(tk.Tk):
                 for c in self.circles:
                     c.rebase(model.me.x, model.me.y, model.me.t)
                     c.place()
-            else:
-                time.sleep(0.01)
-            self.circles = [c for c in self.circles if c.alpha > 0]
+            time.sleep(0.020)
+            self.circles = [c for c in self.circles if c.visible]
 
     def on_closing(self):
         self.destroy()
