@@ -27,7 +27,7 @@ def on_click(press):
     if abs(t) <= rad_range and e.yr > 0:
         mouse_px = t * px_rad
         print(f'{int(round(mouse_px))} 0')
-        sys.stdout.flush()
+        sys.stdout.flush() # repeat few times?
 
 class MouseListener():
     def __init__(self):

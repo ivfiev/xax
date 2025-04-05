@@ -113,6 +113,7 @@ void disable_stderr(void) {
   int null_fd = open("/dev/null", O_WRONLY);
   if (null_fd == -1) {
     perror("Failed to open /dev/null");
+    return;
   }
   if (dup2(null_fd, STDERR_FILENO) == -1) {
     perror("Failed to redirect stderr");
