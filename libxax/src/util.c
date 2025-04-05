@@ -6,11 +6,16 @@
 #include <ctype.h>
 #include <math.h>
 #include <sys/time.h>
+#include <sys/ptrace.h>
 #include <fcntl.h>
 #include "types.h"
 
 void err_fatal(char *s) {
-  fprintf(stderr, "%s\n%s\n", s, strerror(errno));
+  char *err = strerror(errno);
+  fprintf(stderr, "%s\n", s);
+  if (strcmp(err, "Success")) {
+    fprintf(stderr, "%s\n", err);
+  }
   exit(1);
 }
 
@@ -120,4 +125,39 @@ void disable_stderr(void) {
     close(null_fd);
   }
   close(null_fd);
+}
+
+ssize_t ptrace_read(pid_t pid, void *addr, uint8_t buf[], size_t count) {
+  #define WORD_SIZE 8
+  if (count % WORD_SIZE != 0) {
+    err_fatal("count %% WORD_SIZE");
+  }
+  size_t i;
+  union word64 word;
+  for (i = 0; i < count; i += WORD_SIZE) {
+    word.int64 = ptrace(PTRACE_PEEKDATA, pid, addr + i, 0);
+    memcpy(buf + i, word.bytes, WORD_SIZE);
+  }
+  return i >= count ? i : -1;
+}
+
+ssize_t ptrace_write(pid_t pid, void *addr, uint8_t buf[], size_t count) {
+  #define WORD_SIZE 8
+  if (count % WORD_SIZE != 0) {
+    err_fatal("cound %% WORD_SIZE");
+  }
+  size_t i;
+  union word64 word;
+  for (i = 0; i < count; i += WORD_SIZE) {
+    memcpy(word.bytes, buf + i, WORD_SIZE);
+    ptrace(PTRACE_POKEDATA, pid, addr + i, word.int64);
+  }
+  return i >= count ? i : -1;
+}
+
+void print_bytes(uint8_t bytes[], size_t count) {
+  for (int i = 0; i < count; i++) {
+    printf("0x%x ", bytes[i]);
+  }
+  puts("");
 }

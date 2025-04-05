@@ -51,6 +51,7 @@ void readfiles(void) {
         bytes[i] = byte;
       }
     }
+    fclose(fs);
   }
 }
 

@@ -2,6 +2,8 @@
 #define XAX_UTIL_H
 
 #include <time.h>
+#include <unistd.h>
+#include <stdint.h>
 
 #define SIZEARR(arr) (sizeof(arr) / sizeof((arr)[0]))
 #define MIN(x, y) ((x) < (y) ? (x) : (y))
@@ -38,5 +40,7 @@ int intcmp(const void *, const void *);
 void msleep(int ms);
 
 void disable_stderr(void);
+
+void print_bytes(uint8_t bytes, size_t count);
 
 #endif
