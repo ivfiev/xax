@@ -31,4 +31,6 @@ int close_mem(int fd);
 
 void free_mem(mem_block *);
 
+size_t read_tids(pid_t pid, pid_t tids[], size_t size);
+
 #endif

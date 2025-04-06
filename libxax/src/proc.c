@@ -4,6 +4,7 @@
 #include <unistd.h>
 #include "proc.h"
 #include "util.h"
+#include <sys/ptrace.h>
 
 pid_t get_pid(const char *proc_name) {
   char buf[32], cmd[32];
@@ -126,4 +127,48 @@ int close_mem(int fd) {
 void free_mem(mem_block *mem) {
   free(mem->bytes);
   free(mem);
+}
+
+ssize_t ptrace_read(pid_t pid, void *addr, uint8_t buf[], size_t count) {
+  #define WORD_SIZE 8
+  if (count % WORD_SIZE != 0) {
+    err_fatal("count %% WORD_SIZE");
+  }
+  size_t i;
+  union word64 word;
+  for (i = 0; i < count; i += WORD_SIZE) {
+    word.int64 = ptrace(PTRACE_PEEKDATA, pid, addr + i, 0);
+    memcpy(buf + i, word.bytes, WORD_SIZE);
+  }
+  return i >= count ? i : -1;
+}
+
+ssize_t ptrace_write(pid_t pid, void *addr, uint8_t buf[], size_t count) {
+  #define WORD_SIZE 8
+  if (count % WORD_SIZE != 0) {
+    err_fatal("cound %% WORD_SIZE");
+  }
+  size_t i;
+  union word64 word;
+  for (i = 0; i < count; i += WORD_SIZE) {
+    memcpy(word.bytes, buf + i, WORD_SIZE);
+    ptrace(PTRACE_POKEDATA, pid, addr + i, word.int64);
+  }
+  return i >= count ? i : -1;
+}
+
+size_t read_tids(pid_t pid, pid_t tids[], size_t size) {
+  char buf[4096];
+  char *toks[256];
+  char cmd[256];
+  snprintf(cmd, sizeof(cmd), "ls /proc/%d/task", pid);
+  ssize_t bytes = run_cmd(cmd, buf, sizeof(buf));
+  if (bytes <= 0) {
+    err_fatal("read_tids");
+  }
+  size_t count = strsplit(buf, "\n", toks, SIZEARR(toks));
+  for (int i = 0; i < count; i++) {
+    tids[i] = atoi(toks[i]);
+  }
+  return count;
 }

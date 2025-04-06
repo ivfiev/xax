@@ -41,6 +41,6 @@ void msleep(int ms);
 
 void disable_stderr(void);
 
-void print_bytes(uint8_t bytes, size_t count);
+void print_bytes(uint8_t bytes[], size_t count);
 
 #endif
