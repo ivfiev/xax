@@ -32,8 +32,9 @@ static int handle_breakpoint(pid_t tid) {
   ptrace(PTRACE_GETREGS, tid, 0, &regs);
   ptrace(PTRACE_GETFPREGS, tid, 0, &fpregs);
   float x = *(float *)fpregs.xmm_space;
-  x += 1000.0;
-  fpregs.xmm_space[0] = *(int *)(&x);
+  printf("%f\n", x);
+  // x += 1000.0;
+  // fpregs.xmm_space[0] = *(int *)(&x);
   regs.rip--;
   ptrace(PTRACE_SETREGS, tid, 0, &regs);
   ptrace(PTRACE_SETFPREGS, tid, 0, &fpregs);
