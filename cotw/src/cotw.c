@@ -7,22 +7,43 @@
 #include <sys/ptrace.h>
 #include <sys/user.h>
 #include <errno.h>
+#include <string.h>
 
-static int STOPPING = 0;
+static int DETACHING = 0;
 
 static void handle_sigint(int) {
-  if (STOPPING == 1) {
+  if (DETACHING == 1) {
     exit(0);
   }
-  STOPPING = 1;
+  DETACHING = 1;
 }
 
-static int handle_stop(pid_t tid) {
+static void set_byte(pid_t pid, uintptr_t addr, uint8_t byte) {
+  uint8_t bytes[8];
+  ptrace_read(pid, (void *)addr, bytes, SIZEARR(bytes));
+  print_bytes(bytes, 8);
+  bytes[0] = byte;
+  ptrace_write(pid, (void *)addr, bytes, SIZEARR(bytes));
+}
+
+static int handle_breakpoint(pid_t tid) {
   struct user_regs_struct regs;
+  struct user_fpregs_struct fpregs;
   ptrace(PTRACE_GETREGS, tid, 0, &regs);
-  if (regs.orig_rax == 1) {
-    return regs.rax == -ENOSYS;
+  ptrace(PTRACE_GETFPREGS, tid, 0, &fpregs);
+  float x = *(float *)fpregs.xmm_space;
+  x += 1000.0;
+  fpregs.xmm_space[0] = *(int *)(&x);
+  regs.rip--;
+  ptrace(PTRACE_SETREGS, tid, 0, &regs);
+  ptrace(PTRACE_SETFPREGS, tid, 0, &fpregs);
+  set_byte(tid, 0x401186, 0x5d);
+  ptrace(PTRACE_SINGLESTEP, tid, 0, 0);
+  waitpid(tid, 0, 0);
+  if (DETACHING == 0) {
+    set_byte(tid, 0x401186, 0xCC);
   }
+  ptrace(PTRACE_CONT, tid, 0, 0);
   return 0;
 }
 
@@ -47,17 +68,22 @@ void run(void) {
       err_fatal("attach");
     }
     waitpid(tids[i], NULL, 0);
+    if (i == 0) {
+      set_byte(pid, 0x401186, 0xCC);
+    }
     ptrace(PTRACE_SETOPTIONS, tids[i], 0, PTRACE_O_TRACEFORK | PTRACE_O_TRACEVFORK | PTRACE_O_TRACECLONE);
-    ptrace(PTRACE_SYSCALL, tids[i], 0, 0);
+    ptrace(PTRACE_CONT, tids[i], 0, 0);
   }
   int status;
   for (;;) {
     pid_t tid = waitpid(-1, &status, __WALL);
-    puts("caught");
-    if (STOPPING == 1) {
+    if (WIFSTOPPED(status)) {
+      printf("stpped %d\n", tid);
+      handle_breakpoint(tid);
+    }
+    if (DETACHING == 1) {
+      puts("detaching");
       ptrace(PTRACE_DETACH, tid, 0, 0);
-    } else {
-      ptrace(PTRACE_SYSCALL, tid, 0, 0);
     }
   }
 }
