@@ -4,7 +4,7 @@
 #include <sys/ptrace.h>
 #include <sys/user.h>
 
-ssize_t ptrace_read(pid_t pid, void *addr, uint8_t buf[], size_t count) {
+ssize_t ptrace_read(pid_t pid, uintptr_t addr, uint8_t buf[], size_t count) {
   #define WORD_SIZE 8
   if (count % WORD_SIZE != 0) {
     err_fatal("count %% WORD_SIZE");
@@ -18,7 +18,7 @@ ssize_t ptrace_read(pid_t pid, void *addr, uint8_t buf[], size_t count) {
   return i >= count ? i : -1;
 }
 
-ssize_t ptrace_write(pid_t pid, void *addr, uint8_t buf[], size_t count) {
+ssize_t ptrace_write(pid_t pid, uintptr_t addr, uint8_t buf[], size_t count) {
   #define WORD_SIZE 8
   if (count % WORD_SIZE != 0) {
     err_fatal("cound %% WORD_SIZE");
@@ -34,14 +34,14 @@ ssize_t ptrace_write(pid_t pid, void *addr, uint8_t buf[], size_t count) {
 
 void set_byte(pid_t pid, uintptr_t addr, uint8_t byte) {
   uint8_t bytes[8];
-  ptrace_read(pid, (void *)addr, bytes, SIZEARR(bytes));
+  ptrace_read(pid, addr, bytes, SIZEARR(bytes));
   bytes[0] = byte;
-  ptrace_write(pid, (void *)addr, bytes, SIZEARR(bytes));
+  ptrace_write(pid, addr, bytes, SIZEARR(bytes));
 }
 
 void ret(pid_t tid, struct user_regs_struct *regs) {
   union word64 w;
-  ptrace_read(tid, (void *)regs->rsp, (uint8_t *)w.bytes, sizeof(w.bytes));
+  ptrace_read(tid, regs->rsp, (uint8_t *)w.bytes, sizeof(w.bytes));
   regs->rip = w.int64;
-  regs->rsp -= 8;
+  regs->rsp += 8;
 }

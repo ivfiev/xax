@@ -10,6 +10,9 @@
 #include <errno.h>
 #include <string.h>
 
+//#define ADDRESS 0x401187
+#define ADDRESS 0x140a22a78
+
 static int DETACHING = 0;
 
 static void handle_sigint(int) {
@@ -26,8 +29,8 @@ static int handle_breakpoint(pid_t tid) {
   ptrace(PTRACE_GETFPREGS, tid, 0, &fpregs);
   float x = *(float *)fpregs.xmm_space;
   printf("%d -> %f\n", tid, x);
-  // x += 1000.0;
-  // fpregs.xmm_space[0] = *(int *)(&x);
+  x /= 5.0;
+  fpregs.xmm_space[0] = *(int *)(&x);
   ret(tid, &regs);
   ptrace(PTRACE_SETREGS, tid, 0, &regs);
   ptrace(PTRACE_SETFPREGS, tid, 0, &fpregs);
@@ -36,10 +39,11 @@ static int handle_breakpoint(pid_t tid) {
 }
 
 void run(void) {
+  sleep(60);
   if (signal(SIGINT, handle_sigint) == SIG_ERR) {
     err_fatal("signal");
   }
-  pid_t pid = get_pid("demo");
+  pid_t pid = get_pid("CotW");
   if (pid <= 0) {
     err_fatal("pid");
   }
@@ -57,7 +61,7 @@ void run(void) {
     }
     waitpid(tids[i], NULL, 0);
     if (i == 0) {
-      set_byte(pid, 0x401187, 0xCC);
+      set_byte(pid, ADDRESS, 0xCC);
     }
     ptrace(PTRACE_SETOPTIONS, tids[i], 0, PTRACE_O_TRACEFORK | PTRACE_O_TRACEVFORK | PTRACE_O_TRACECLONE);
     ptrace(PTRACE_CONT, tids[i], 0, 0);
@@ -65,9 +69,9 @@ void run(void) {
   int status;
   for (;;) {
     pid_t tid = waitpid(-1, &status, __WALL);
-    if (WIFSTOPPED(status)) {
+    if (WIFSTOPPED(status) && WSTOPSIG(status) == SIGTRAP) {
       if (DETACHING == 1) {
-        set_byte(tid, 0x401187, 0xC3);
+        set_byte(tid, ADDRESS, 0xC3);
       }
       handle_breakpoint(tid);
     }
