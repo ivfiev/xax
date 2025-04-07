@@ -7,7 +7,7 @@ import model
 from math import *
 from pynput import mouse
 
-px_rad = 1100                                        # TODO decrease a bit
+px_rad = 1100
 rad_range = pi / 20
 
 def get_dist(e):
