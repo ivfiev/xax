@@ -28,8 +28,8 @@ static int handle_breakpoint(pid_t tid) {
   ptrace(PTRACE_GETREGS, tid, 0, &regs);
   ptrace(PTRACE_GETFPREGS, tid, 0, &fpregs);
   float x = *(float *)fpregs.xmm_space;
-  printf("%d -> %f\n", tid, x);
-  x /= 5.0;
+  //printf("%d -> %f\n", tid, x);
+  x = 0.0;
   fpregs.xmm_space[0] = *(int *)(&x);
   ret(tid, &regs);
   ptrace(PTRACE_SETREGS, tid, 0, &regs);
@@ -39,7 +39,6 @@ static int handle_breakpoint(pid_t tid) {
 }
 
 void run(void) {
-  sleep(60);
   if (signal(SIGINT, handle_sigint) == SIG_ERR) {
     err_fatal("signal");
   }
@@ -47,7 +46,7 @@ void run(void) {
   if (pid <= 0) {
     err_fatal("pid");
   }
-  pid_t tids[16];
+  pid_t tids[128];
   size_t tids_count = read_tids(pid, tids, SIZEARR(tids));
   printf("tids count: [%ld]: ", tids_count);
   for (int i = 0; i < tids_count; i++) {
