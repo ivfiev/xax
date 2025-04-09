@@ -1,8 +1,4 @@
-import signal
-import tkinter as tk
-import threading
 import sys
-import time
 import model
 from math import *
 from pynput import mouse
@@ -17,9 +13,7 @@ def get_angle(e):
     h = get_dist(e)
     return asin(e.xr / h)
 
-def on_click(press):
-    if not press:
-        return
+def aim_at_closest_enemy():
     enemies = [(id, e) for id, e in model.players.items() if e.color != model.me.color]
     if not enemies:
         return
@@ -27,18 +21,16 @@ def on_click(press):
     if abs(t) <= rad_range and e.yr > 0:
         mouse_px = t * px_rad
         print(f'{int(round(mouse_px))} 0')
-        sys.stdout.flush() # repeat few times?
+        sys.stdout.flush()
 
-class MouseListener():
-    def __init__(self):
-        self.listener = mouse.Listener(on_click=self.on_click)
-        self.listener.start()
-
-    def on_click(self, x, y, _, press):
-        on_click(press)
+def on_click(_, __, ___, press):
+    if not press:
+        return
+    aim_at_closest_enemy()
 
 if __name__ == "__main__":
-    listener = MouseListener()
+    ml = mouse.Listener(on_click=on_click)
+    ml.start()
     while True:
         line = sys.stdin.readline()
-        model.parse_players(line, record_history=True)
+        model.parse_players(line, record_history=False) # todo 

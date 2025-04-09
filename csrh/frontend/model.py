@@ -1,4 +1,4 @@
-import datetime
+from datetime import datetime, UTC
 from math import *
 
 class Entity():
@@ -26,7 +26,7 @@ def parse_players(line, record_history=False, max_records=50):
     for str in raw_strs:
         [id, coords, meta] = str.split(':')
         is_me = meta.startswith('1')
-        [x, y, yaw] = map(lambda xy: float(xy), coords.split(','))
+        [x, y, yaw, pitch] = map(lambda xy: float(xy), coords.split(','))
         color = 'T' if 'T' in meta else 'C'
         t = yaw / 180 * pi - pi / 2.0
         e = Entity(x, y, t, color)
@@ -49,4 +49,4 @@ def rebase(x, y, x0, y0, t0):
     return (x, y)
 
 def utcnow():
-    return int(datetime.now(datetime.UTC).timestamp() * 1000)
+    return int(datetime.now(UTC).timestamp() * 1000)
