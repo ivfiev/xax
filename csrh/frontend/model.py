@@ -20,7 +20,7 @@ histories = []
 def parse_players(line, record_history=False, max_records=50):
     global me, players, histories
     if not line.endswith(',1\n'):
-        return
+        return False
     raw_strs = line.split('|')
     new_players = {}
     for str in raw_strs:
@@ -41,6 +41,7 @@ def parse_players(line, record_history=False, max_records=50):
         histories.append(new_players)
         if len(histories) > max_records:
             histories = histories[1:]
+    return True
 
 def rebase(x, y, x0, y0, t0):
     (x, y) = (x - x0, y - y0)

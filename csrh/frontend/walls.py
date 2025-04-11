@@ -1,48 +1,67 @@
+import fcntl
+import os
+import signal
+import sys
+from time import sleep
 import tkinter as tk
-
+import traceback
+import model
 
 class MovableWindow:
-    def __init__(self, x, y, size, color):
-        self.root = tk.Tk()
+    def __init__(self, root, x, y, h, w):
+        self.root = tk.Toplevel(root)
         self.root.overrideredirect(True)
-        self.root.geometry(f"{size}x{size}+{x}+{y}")
+        self.root.geometry(f"{w}x{h}+{x}+{y}")
         self.root.attributes('-topmost', True)
-
-        self.canvas = tk.Canvas(self.root, width=size, height=size, bg=color, highlightthickness=3)
+        self.canvas = tk.Canvas(self.root, width=w, height=h, bg=None, highlightthickness=3)
         self.canvas.pack()
-
         self.x, self.y = x, y
-        self.dx, self.dy = 5, 5
-        self.size = size
-        self.ds = 1
+        self.h, self.w = h, w
+        self.col = None
+        self.toggle(False)
 
-    def move(self):
-        self.x += self.dx
-        self.y += self.dy
+    def set(self, x, y, h, w, col):
+        self.x, self.y, self.h, self.w = x, y, h, w
+        self.col = col
+        self.root.geometry(f"{self.w}x{self.h}+{self.x}+{self.y}")
+        self.canvas.config(width=self.w, height=self.h, bg=col)
 
-        if self.x <= 0 or self.x + self.size >= 3840:
-            self.dx *= -1
-        if self.y <= 0 or self.y + self.size >= 2160:
-            self.dy *= -1
+    def toggle(self, visible):
+        if visible:
+            self.root.deiconify()
+        else:
+            self.root.withdraw()
 
-        self.ds = -1 if self.size == 150 else 1 if self.size == 50 else self.ds
-        self.size += self.ds
+class Root(tk.Tk):
+    def __init__(self, screenName = None, baseName = None, className = "Tk", useTk = True, sync = False, use = None):
+        super().__init__(screenName, baseName, className, useTk, sync, use)
+        self.thread = None
+        self.withdraw()
 
-        self.root.geometry(f"{self.size}x{self.size}+{self.x}+{self.y}")
-        self.canvas.config(width=self.size, height=self.size)
-        self.root.after(15, self.move)
-
-
+root = Root()
 windows = [
-    MovableWindow(100, 100, 100, "red"),
-    MovableWindow(300, 300, 100, "red"),
-    MovableWindow(200, 700, 100, "blue"),
-    MovableWindow(2200, 700, 100, "blue"),
-    MovableWindow(1300, 1300, 100, "red"),
+   MovableWindow(root, 0, 0, 0, 0),
+   MovableWindow(root, 0, 0, 0, 0),
+   MovableWindow(root, 0, 0, 0, 0),
+   MovableWindow(root, 0, 0, 0, 0),
+   MovableWindow(root, 0, 0, 0, 0),
 ]
 
-for window in windows:
-    window.move()
+signal.signal(signal.SIGINT, lambda x, y: sys.exit(0))
 
-for window in windows:
-    window.root.mainloop()
+try:
+    fcntl.fcntl(sys.stdin.fileno(), fcntl.F_SETFL, fcntl.fcntl(sys.stdin.fileno(), fcntl.F_GETFL) | os.O_NONBLOCK)
+    i = 0
+    while True:
+        line = sys.stdin.readline()
+        model.parse_players(line, False)
+        for w in range(5):
+            windows[w].set(100 + w * 100 + i * w, 100 + w * 100 + i, 100, 100, 'red' if i % 100 < 50 else 'blue')
+            windows[w].toggle(True)
+        root.update_idletasks()
+        root.update()
+        sleep(0.005)
+        i += 1
+except:
+    traceback.print_exc()
+    root.destroy()
