@@ -25,7 +25,7 @@ struct entity {
   uintptr_t pawn;
   int id;
   int is_local;
-  float x, y;
+  float x, y, z;
   float yaw;
   float pitch;
   int is_alive;
@@ -98,6 +98,7 @@ static void read_entity(uintptr_t ctl, int id, struct entity *e) {
   uintptr_t ptr_x = hop(MEM_FD, pawn, offsets_xyz, SIZEARR(offsets_xyz));
   e->x = read_word(ptr_x).float32;
   e->y = read_word(ptr_x + 4).float32;
+  e->z = read_word(ptr_x + 8).float32;
   uintptr_t offsets_yaw[] = {0x10, 0x0, 0x4b0, 0x720};
   uintptr_t ptr_y = hop(MEM_FD, pawn, offsets_yaw, SIZEARR(offsets_yaw));
   e->yaw = read_word(ptr_y).float32;
@@ -122,9 +123,9 @@ size_t read_players(struct entity *players) {
 
 static void print_player(struct entity *player) {
   printf(
-    "%d:%f,%f,%f,%f:%d,%c,%d", 
+    "%d:%f,%f,%f,%f,%f:%d,%c,%d", 
     player->id, 
-    player->x, player->y, player->yaw, player->pitch, 
+    player->x, player->y, player->z, player->yaw, player->pitch, 
     player->is_local, player->team, player->is_alive
   );
 }

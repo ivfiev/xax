@@ -1,23 +1,17 @@
 import sys
 import model
-from math import *
+import util
+import math
 from pynput import mouse
 
 px_rad = 1100
-rad_range = pi / 20
-
-def get_dist(e):
-    return sqrt(e.xr**2 + e.yr**2)
-
-def get_angle(e):
-    h = get_dist(e)
-    return asin(e.xr / h)
+rad_range = math.pi / 20
 
 def aim_at_closest_enemy():
-    enemies = [(id, e) for id, e in model.players.items() if e.color != model.me.color]
+    enemies = [(id, e) for id, e in model.players.items() if model.is_enemy(e)]
     if not enemies:
         return
-    (t, e, id) = min([(get_angle(e), e, id) for id, e in enemies], key=lambda t: abs(t[0]))
+    (t, e, id) = min([(util.get_angle_x(e), e, id) for id, e in enemies], key=lambda t: abs(t[0]))
     if abs(t) <= rad_range and e.yr > 0:
         mouse_px = t * px_rad
         print(f'{int(round(mouse_px))} 0')
@@ -33,4 +27,4 @@ if __name__ == "__main__":
     ml.start()
     while True:
         line = sys.stdin.readline()
-        model.parse_players(line, record_history=False) # todo 
+        model.parse_players(line, history=0) # todo 

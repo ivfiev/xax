@@ -1,4 +1,4 @@
-import os
+import util
 import signal
 import tkinter as tk
 import threading
@@ -6,7 +6,6 @@ import sys
 import time
 import model
 from pynput import mouse
-from fcntl import fcntl, F_GETFL, F_SETFL
 
 class FadingCircle:
     def __init__(self, canvas, x, y, col):
@@ -71,9 +70,7 @@ class Overlay(tk.Tk):
         self.init()
 
     def init(self):
-        fd = sys.stdin.fileno()
-        flags = fcntl(fd, F_GETFL)
-        fcntl(fd, F_SETFL, flags | os.O_NONBLOCK)
+        util.stdin_nonblock()
 
     def read_latest(self):
         line = None
