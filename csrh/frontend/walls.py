@@ -9,8 +9,7 @@ import model
 import math
 
 px_rad = 1500
-rad_range = math.pi / 7
-max_targets = 5
+rad_range = math.pi / 3.5
 mid_y = 2160.0 / 2.0
 mid_x = 3840.0 / 2.0
 px_200_100_350 = 180.0
@@ -21,7 +20,7 @@ class MovableWindow:
         self.root.overrideredirect(True)
         self.root.geometry(f"{w}x{h}+{x}+{y}")
         self.root.attributes('-topmost', True)
-        self.canvas = tk.Canvas(self.root, width=w, height=h, bg=None, highlightthickness=2)
+        self.canvas = tk.Canvas(self.root, width=w, height=h, bg=None, highlightthickness=0)
         self.canvas.pack()
         self.x, self.y = x, y
         self.h, self.w = h, w
@@ -47,22 +46,29 @@ class Root(tk.Tk):
         self.withdraw()
 
 root = Root()
-windows = [MovableWindow(root, 0, 0, 0, 0) for _ in range(max_targets)]
+windows = [MovableWindow(root, 0, 0, 0, 0) for _ in range(65)]
 
 pressed = False
+last_press = 0
 def setup_mouse():
     def on_click(_, __, ___, press): 
-        global pressed
+        global last_press, pressed
+        last_press = util.utcnow()
         pressed = press
     ml = mouse.Listener(on_click=on_click)
     ml.start()
 
+def fisheye(r):
+    if abs(r) <= math.pi / 7: 
+        return 1
+    return (1 + 0.33 * (abs(r) - math.pi / 7))**2
+    
 def targets():
     enemies = [(id, e) for id, e in model.players.items() if model.is_enemy(e)]
-    boxed = [e for (_, e) in enemies 
+    boxed = [(int(id), e) for (id, e) in enemies 
                 if e.yr > 0 and 
                     abs(util.get_angle_x(e)) < rad_range and 
-                    abs(util.get_angle_y(e) + model.me.p) < rad_range]
+                    abs(util.get_angle_y(e) + model.me.p) < rad_range / 1.3]
     return boxed
 
 try:
@@ -73,21 +79,34 @@ try:
         line = sys.stdin.readline()
         model.parse_players(line)
         ts = targets()
-        for i in range(min(len(windows), len(ts))):
-            e = ts[i]
-            d = util.get_dist(e)
-            s = px_200_100_350 / d
-            o = 350 * s
-            h = min(400, max(200 * s, 20))
-            w = min(200, max(100 * s, 10))
+        active = set()
+        visible = not pressed and (util.utcnow() - last_press > 200)
+
+        for t in ts:
+            (id, e) = t
+            active.add(id)
+            win = windows[id]
+
+            dist = util.get_dist(e)
+            scale = px_200_100_350 / dist
+            offset = 350 * scale
             tx = util.get_angle_x(e)
             ty = -util.get_angle_y(e) - model.me.p
-            x = tx * px_rad + mid_x
-            y = mid_y + ty * px_rad + o
-            windows[i].set(x, y, h, w, 'red' if e.color == 'T' else 'blue')
-            windows[i].toggle(not pressed)
-        for i in range(len(ts), max_targets):
-            windows[i].toggle(False)
+            fish = fisheye(tx)
+
+            h = fish * min(400, max(200 * scale, 16))
+            w = fish * min(200, max(100 * scale, 8))
+            x = mid_x + fish * tx * px_rad
+            y = mid_y + ty * px_rad + offset
+            color = 'red' if e.color == 'T' else 'blue'
+
+            win.set(x, y, h, w, color)
+            win.toggle(visible)
+
+        for i in range(65):
+            if i not in active:
+                windows[i].toggle(False)
+            
         root.update_idletasks()
         root.update()
         sleep(0.005)

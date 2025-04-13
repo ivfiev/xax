@@ -54,5 +54,5 @@ def rebase(x, y, x0, y0, t0):
     return (x, y)
 
 def is_enemy(e):
-    deathmatch = True
+    deathmatch = False
     return deathmatch or e.color != me.color
