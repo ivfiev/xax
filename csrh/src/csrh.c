@@ -91,8 +91,8 @@ static void read_entity(uintptr_t ctl, int id, struct entity *e) {
   uintptr_t local_ctl = read_word(LOCAL_PLAYER_CTL_PTR_ADDR).ptr64;
   uintptr_t pawn = get_pawn(ctl);
   e->is_local = ctl == local_ctl;
-  e->is_alive = read_word(ctl + 0x9a4).int32;
-  int team = read_word(ctl + 0x55b).int32;
+  e->is_alive = read_word(ctl + 0x9b4).int32; // "IsPlayerAlive"
+  int team = read_word(ctl + 0x55b).int32;  // "GetPlayerTeamNumber"
   e->team = team == 2 ? 'T' : team == 3 ? 'C' : '_';
   uintptr_t offsets_xyz[] = {0x38, 0x70};
   uintptr_t ptr_x = hop(MEM_FD, pawn, offsets_xyz, SIZEARR(offsets_xyz));
@@ -147,7 +147,7 @@ static void run(void) {
   OPEN_MEM("cs2$");
   MEM_FD = fd;
   LIBCLIENT_BASE = get_base_addr(pid, "libclient");
-  //disable_stderr();
+  disable_stderr();
   read_addrs();
   main_loop();
 }
