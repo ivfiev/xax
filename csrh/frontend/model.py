@@ -1,4 +1,7 @@
 from math import *
+import os
+
+DEATHMATCH = os.getenv('DEATHMATCH') == '1'
 
 class Entity():
     def __init__(self, x, y, z, t, p, color):
@@ -54,5 +57,4 @@ def rebase(x, y, x0, y0, t0):
     return (x, y)
 
 def is_enemy(e):
-    deathmatch = False
-    return deathmatch or e.color != me.color
+    return DEATHMATCH or e.color != me.color
