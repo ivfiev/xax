@@ -73,43 +73,44 @@ def targets():
 
 try:
     signal.signal(signal.SIGINT, lambda x, y: sys.exit(0))
-    setup_mouse()
-    # util.stdin_nonblock()
+    # setup_mouse()
+    util.stdin_nonblock()
     while True:
-        line = sys.stdin.readline()
-        model.parse_players(line)
-        ts = targets()
-        active = set()
-        visible = not pressed and (util.utcnow() - last_press > 200)
+        line = util.read_last()
+        if line:
+            model.parse_players(line)
+            ts = targets()
+            active = set()
+            visible = not pressed and (util.utcnow() - last_press > 200)
 
-        for t in ts:
-            (id, e) = t
-            active.add(id)
-            win = windows[id]
+            for t in ts:
+                (id, e) = t
+                active.add(id)
+                win = windows[id]
 
-            dist = util.get_dist(e)
-            scale = px_200_100_350 / dist
-            offset = 350 * scale
-            tx = util.get_angle_x(e)
-            ty = -util.get_angle_y(e) - model.me.p
-            fish = fisheye(tx)
+                dist = util.get_dist(e)
+                scale = px_200_100_350 / dist
+                offset = 350 * scale
+                tx = util.get_angle_x(e)
+                ty = -util.get_angle_y(e) - model.me.p
+                fish = fisheye(tx)
 
-            h = fish * min(400, max(200 * scale, 16))
-            w = fish * min(200, max(100 * scale, 8))
-            x = mid_x + fish * tx * px_rad
-            y = mid_y + ty * px_rad + offset
-            color = 'red' if e.color == 'T' else 'blue'
+                h = fish * min(400, max(200 * scale, 16))
+                w = fish * min(200, max(100 * scale, 8))
+                x = mid_x + fish * tx * px_rad
+                y = mid_y + ty * px_rad + offset
+                color = 'red' if e.color == 'T' else 'blue'
 
-            win.set(x, y, h, w, color)
-            win.toggle(visible)
+                win.set(x, y, h, w, color)
+                win.toggle(visible)
 
-        for i in range(65):
-            if i not in active:
-                windows[i].toggle(False)
+            for i in range(65):
+                if i not in active:
+                    windows[i].toggle(False)
             
         root.update_idletasks()
         root.update()
-        sleep(0.005)
+        sleep(0.001)
 except:
     traceback.print_exc()
     root.destroy()

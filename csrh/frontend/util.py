@@ -24,3 +24,12 @@ def get_angle_y(e):
     h = sqrt(e.zr**2 + e.yr**2)
     #h = get_dist(e)
     return asin(e.zr / h)
+
+def read_last():
+    # requires non-blocking stdin!
+    last_line = None
+    while True:
+        tmp = sys.stdin.readline()
+        if not tmp:
+            return last_line
+        last_line = tmp
