@@ -25,6 +25,7 @@ class MovableWindow:
         self.x, self.y = x, y
         self.h, self.w = h, w
         self.col = None
+        self.visible = None
         self.toggle(False)
 
     def set(self, x, y, h, w, col):
@@ -34,6 +35,9 @@ class MovableWindow:
         self.canvas.config(width=self.w, height=self.h, bg=col)
 
     def toggle(self, visible):
+        if self.visible == visible:
+            return
+        self.visible = visible
         if visible:
             self.root.deiconify()
         else:
@@ -42,7 +46,6 @@ class MovableWindow:
 class Root(tk.Tk):
     def __init__(self, screenName = None, baseName = None, className = "Tk", useTk = True, sync = False, use = None):
         super().__init__(screenName, baseName, className, useTk, sync, use)
-        self.thread = None
         self.withdraw()
 
 root = Root()
