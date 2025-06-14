@@ -17,13 +17,15 @@ def get_dist(e):
 
 def get_angle_x(e):
     h = sqrt(e.xr**2 + e.yr**2)
-    #h = get_dist(e)
     return asin(e.xr / h)
 
 def get_angle_y(e):
     h = sqrt(e.zr**2 + e.yr**2)
-    #h = get_dist(e)
     return asin(e.zr / h)
+
+def get_angle_abc(a, b, c):
+    h = sqrt(a**2 + b**2 + c**2)
+    return asin(c / h)
 
 def read_last():
     # requires non-blocking stdin!

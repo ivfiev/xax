@@ -2,7 +2,6 @@ import util
 import signal
 import sys
 from time import sleep
-from pynput import mouse
 import tkinter as tk
 import traceback
 import model
@@ -51,32 +50,17 @@ class Root(tk.Tk):
 root = Root()
 windows = [MovableWindow(root, 0, 0, 0, 0) for _ in range(65)]
 
-pressed = False
-last_press = 0
-def setup_mouse():
-    def on_click(_, __, ___, press): 
-        global last_press, pressed
-        last_press = util.utcnow()
-        pressed = press
-    ml = mouse.Listener(on_click=on_click)
-    ml.start()
-
 def fisheye(r):
     if abs(r) <= math.pi / 7: 
         return 1
     return (1 + 0.33 * (abs(r) - math.pi / 7))**2
     
 def targets():
-    enemies = [(id, e) for id, e in model.players.items() if model.is_enemy(e)]
-    boxed = [(int(id), e) for (id, e) in enemies 
-                if e.yr > 0 and 
-                    abs(util.get_angle_x(e)) < rad_range and 
-                    abs(util.get_angle_y(e) + model.me.p) < rad_range / 1.3]
-    return boxed
+    enemies = [(int(id), e) for id, e in model.players.items() if model.is_enemy(e)]
+    return enemies
 
 try:
     signal.signal(signal.SIGINT, lambda x, y: sys.exit(0))
-    # setup_mouse()
     util.stdin_nonblock()
     while True:
         line = util.read_last()
@@ -84,33 +68,41 @@ try:
             model.parse_players(line)
             ts = targets()
             active = set()
-            visible = not pressed and (util.utcnow() - last_press > 200)
 
             for t in ts:
                 (id, e) = t
                 active.add(id)
                 win = windows[id]
-
+                
                 dist = util.get_dist(e)
                 scale = px_200_100_350 / dist
                 offset = 350 * scale
                 tx = util.get_angle_x(e)
-                ty = -util.get_angle_y(e) - model.me.p
-                fish = fisheye(tx)
 
+                visible = abs(tx) < rad_range and e.yr > 0
+                ty = (-util.get_angle_y(e) if visible else 
+                      -util.get_angle_abc(e.xr, e.yr, e.zr)) - model.me.p
+
+                fish = fisheye(tx)
                 h = fish * min(400, max(200 * scale, 16))
                 w = fish * min(200, max(100 * scale, 8))
                 x = mid_x + fish * tx * px_rad
                 y = mid_y + ty * px_rad + offset
-                color = 'red' if e.color == 'T' else 'blue'
 
+                if not visible:
+                    h = 16 * 3
+                    w = 8 * 3
+                    x = mid_x * 2 - w/5 if x > mid_x else 0 + w/5
+                    y = mid_y
+
+                color = 'red' if e.color == 'T' else 'blue'
                 win.set(x, y, h, w, color)
-                win.toggle(visible)
+                win.toggle(True)
 
             for i in range(65):
                 if i not in active:
                     windows[i].toggle(False)
-            
+        
         root.update_idletasks()
         root.update()
         sleep(0.001)
