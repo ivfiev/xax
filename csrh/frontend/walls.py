@@ -75,13 +75,14 @@ try:
                 win = windows[id]
                 
                 dist = util.get_dist(e)
+                if dist == 0:
+                    continue
                 scale = px_200_100_350 / dist
                 offset = 350 * scale
                 tx = util.get_angle_x(e)
+                ty = -util.get_angle_y(e) - model.me.p
 
-                visible = abs(tx) < rad_range and e.yr > 0
-                ty = (-util.get_angle_y(e) if visible else 
-                      -util.get_angle_abc(e.xr, e.yr, e.zr)) - model.me.p
+                visible = abs(tx) < rad_range and abs(ty) < rad_range / 1.3 and e.yr > 0
 
                 fish = fisheye(tx)
                 h = fish * min(400, max(200 * scale, 16))
@@ -90,8 +91,8 @@ try:
                 y = mid_y + ty * px_rad + offset
 
                 if not visible:
-                    h = 16 * 3
-                    w = 8 * 3
+                    h /= fish
+                    w /= fish
                     x = mid_x * 2 - w/5 if x > mid_x else 0 + w/5
                     y = mid_y
 
