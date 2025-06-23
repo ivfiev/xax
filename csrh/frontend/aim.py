@@ -5,7 +5,7 @@ import math
 from pynput import mouse
 
 px_rad = 1100
-rad_range = math.pi / 20
+rad_range = math.pi / 40
 
 def aim_at_closest_enemy():
     enemies = [(id, e) for id, e in model.players.items() if model.is_enemy(e)]
