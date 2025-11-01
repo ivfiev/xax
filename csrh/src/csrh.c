@@ -57,8 +57,8 @@ void read_addr(uint8_t text[], size_t text_len, uintptr_t *addr, uint8_t sig[], 
 void read_addrs(void) {
   const size_t text_len = 70000000;
   uint8_t global_sig[] = {0x7e, 0x18, 0x48, 0x8d, 0x05};
-  uint8_t player_sig[] = {0x83, 0xff, 0xff, 0x74, 0x0b, 0x48, 0x8b, 0x05};
-  uint8_t pawn_sig[] = {0x83, 0xf9, 0xff, 0x74, 0x4d, 0x48, 0x8b, 0x35};
+  uint8_t player_sig[] = {0x83, 0xff, 0xff, 0x74, 0x0b, 0x48, 0x8b, 0x05}; //83 ff ff 74 0b 48 8b 05 
+  uint8_t pawn_sig[] = {0x83, 0xf9, 0xff, 0x74, 0x4d, 0x48, 0x8b, 0x35}; //83 f9 ff 74 4d 48 8b 35
   uint8_t *text = malloc(text_len);
   lseek(MEM_FD, (off_t)LIBCLIENT_BASE, SEEK_SET);
   read(MEM_FD, text, text_len);
@@ -72,7 +72,7 @@ size_t get_ctls(uintptr_t ctls[]) {
   size_t count = 0;
   uintptr_t ctl_list = read_word(read_word(GLOBAL_STATE_PTR_ADDR).ptr64 + 0x10).ptr64;
   for (int e = 1; e <= 64; e++) {
-    uintptr_t ctl = read_word(ctl_list + e * 0x78).ptr64;
+    uintptr_t ctl = read_word(ctl_list + e * 0x70).ptr64;
     if (ctl != 0) {
       ctls[count++] = ctl;
     }
@@ -81,8 +81,8 @@ size_t get_ctls(uintptr_t ctls[]) {
 }
 
 uintptr_t get_pawn(uintptr_t ctl) {
-  int handle = read_word(ctl + 0x7b4).int32;
-  uintptr_t pawn_ptr = read_word(read_word(PAWN_ARRAY_ADDR).ptr64 + (handle >> 9 & 0x3f) * 8).ptr64 + (handle & 0x1ff) * 0x78;
+  int handle = read_word(ctl + 0x844).int32;
+  uintptr_t pawn_ptr = read_word(read_word(PAWN_ARRAY_ADDR).ptr64 + (handle >> 9 & 0x3f) * 8).ptr64 + (handle & 0x1ff) * 0x70;
   return read_word(pawn_ptr).ptr64;
 }
 
@@ -91,15 +91,15 @@ static void read_entity(uintptr_t ctl, int id, struct entity *e) {
   uintptr_t local_ctl = read_word(LOCAL_PLAYER_CTL_PTR_ADDR).ptr64;
   uintptr_t pawn = get_pawn(ctl);
   e->is_local = ctl == local_ctl;
-  e->is_alive = read_word(ctl + 0x9b4).int32; // "IsPlayerAlive"
-  int team = read_word(ctl + 0x55b).int32;  // "GetPlayerTeamNumber"
+  e->is_alive = read_word(ctl + 0xa94).int32; // "IsPlayerAlive"
+  int team = read_word(ctl + 0x563).bytes[0];  // "GetPlayerTeamNumber"
   e->team = team == 2 ? 'T' : team == 3 ? 'C' : '_';
-  uintptr_t offsets_xyz[] = {0x38, 0x70};
+  uintptr_t offsets_xyz[] = {0x10, 0x0, 0x38, 0x90};
   uintptr_t ptr_x = hop(MEM_FD, pawn, offsets_xyz, SIZEARR(offsets_xyz));
   e->x = read_word(ptr_x).float32;
   e->y = read_word(ptr_x + 4).float32;
   e->z = read_word(ptr_x + 8).float32;
-  uintptr_t offsets_yaw[] = {0x10, 0x0, 0x4b0, 0x720};
+  uintptr_t offsets_yaw[] = {0x10, 0x0, 0x4b8, 0x8e4};
   uintptr_t ptr_y = hop(MEM_FD, pawn, offsets_yaw, SIZEARR(offsets_yaw));
   e->yaw = read_word(ptr_y).float32;
   e->pitch = read_word(ptr_y - 4).float32;

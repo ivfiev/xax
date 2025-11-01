@@ -7,6 +7,7 @@
 union word64 {
   char bytes[8];
   int int32;
+  short int16;
   float float32;
   long long int64;
   double float64;

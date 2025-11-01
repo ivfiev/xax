@@ -99,6 +99,7 @@ try:
                 color = 'red' if e.color == 'T' else 'blue'
                 win.set(x, y, h, w, color)
                 win.toggle(True)
+                sleep(0.001)
 
             for i in range(65):
                 if i not in active:

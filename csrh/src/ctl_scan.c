@@ -11,7 +11,7 @@
 
 #define MAX_DEPTH 4
 #define BLOCK_SIZE 2048
-#define PRECISION 0.001
+#define PRECISION 0.1
 #define IS_PTR(x) (0x500000000000 < (x) && (x) < 0x800000000000)
 
 size_t get_ctls(uintptr_t ctls[]);
