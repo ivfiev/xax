@@ -11,12 +11,14 @@
 
 #define MAX_DEPTH 4
 #define BLOCK_SIZE 2048
-#define PRECISION 0.1
+#define PRECISION 0.01
 #define IS_PTR(x) (0x500000000000 < (x) && (x) < 0x800000000000)
 
 size_t get_ctls(uintptr_t ctls[]);
 
 uintptr_t get_pawn(uintptr_t ctl);
+
+void read_addrs(void);
 
 extern int MEM_FD;
 extern uintptr_t LIBCLIENT_BASE;
@@ -40,6 +42,7 @@ static void init_starts(void) {
   for (int i = 0; i < size; i++) {
     STARTS[i] = get_pawn(ctls[i]);
   }
+  printf("pawn 0: 0x%lx\n", STARTS[0]);
 }
 
 static void print_result(int d) {
@@ -96,7 +99,8 @@ void ctl_scan() {
   READ_DS(1536);
   MEM_FD = fd;
   LIBCLIENT_BASE = get_base_addr(pid, "libclient");
-  printf("0x%lx\n", LIBCLIENT_BASE);
+  printf("libclient: 0x%lx\n", LIBCLIENT_BASE);
+  read_addrs();
   START = parse_addr(args_get("arg0"));
   TARGET = parse_value(args_get("arg1"), FLOAT32_TYPE).float32;
   printf("%f\n", TARGET);

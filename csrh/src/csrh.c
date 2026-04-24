@@ -81,7 +81,7 @@ size_t get_ctls(uintptr_t ctls[]) {
 }
 
 uintptr_t get_pawn(uintptr_t ctl) {
-  int handle = read_word(ctl + 0x844).int32;
+  int handle = read_word(ctl + 0x83c).int32;
   uintptr_t pawn_ptr = read_word(read_word(PAWN_ARRAY_ADDR).ptr64 + (handle >> 9 & 0x3f) * 8).ptr64 + (handle & 0x1ff) * 0x70;
   return read_word(pawn_ptr).ptr64;
 }
@@ -91,15 +91,15 @@ static void read_entity(uintptr_t ctl, int id, struct entity *e) {
   uintptr_t local_ctl = read_word(LOCAL_PLAYER_CTL_PTR_ADDR).ptr64;
   uintptr_t pawn = get_pawn(ctl);
   e->is_local = ctl == local_ctl;
-  e->is_alive = read_word(ctl + 0xa94).int32; // "IsPlayerAlive"
-  int team = read_word(ctl + 0x563).bytes[0];  // "GetPlayerTeamNumber"
+  e->is_alive = read_word(ctl + 0xa8c).int32; // "IsPlayerAlive"
+  int team = read_word(ctl + 0x55b).bytes[0];  // "GetPlayerTeamNumber"
   e->team = team == 2 ? 'T' : team == 3 ? 'C' : '_';
-  uintptr_t offsets_xyz[] = {0x10, 0x0, 0x38, 0x90};
+  uintptr_t offsets_xyz[] = {0x10, 0x0, 0x30, 0x90};
   uintptr_t ptr_x = hop(MEM_FD, pawn, offsets_xyz, SIZEARR(offsets_xyz));
   e->x = read_word(ptr_x).float32;
   e->y = read_word(ptr_x + 4).float32;
   e->z = read_word(ptr_x + 8).float32;
-  uintptr_t offsets_yaw[] = {0x10, 0x0, 0x4b8, 0x8e4};
+  uintptr_t offsets_yaw[] = {0x10, 0x0, 0x4b0, 0x57c};
   uintptr_t ptr_y = hop(MEM_FD, pawn, offsets_yaw, SIZEARR(offsets_yaw));
   e->yaw = read_word(ptr_y).float32;
   e->pitch = read_word(ptr_y - 4).float32;
