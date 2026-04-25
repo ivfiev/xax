@@ -1,2 +1,2 @@
 cli: ./src/*.c
-	gcc -O3 -I./header -I../libxax/header -o ./build/xax ./src/*.c -L../libxax/build -lxax
+	gcc -O2 -march=native -I./header -I../libxax/header -o ./build/xax ./src/*.c -L../libxax/build -lxax
