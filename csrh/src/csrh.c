@@ -8,13 +8,8 @@
 #include <errno.h>
 
 #define START_ADDR 0x100000
-// libclient2
-// #define GLOBAL_STATE_PTR_ADDR (LIBCLIENT_BASE + 0x3aa6690 - START_ADDR)
-// #define LOCAL_PLAYER_CTL_PTR_ADDR (LIBCLIENT_BASE + 0x3aa1618 - START_ADDR)
-// #define PAWN_ARRAY_ADDR (LIBCLIENT_BASE + 0x390d138 - START_ADDR)
 
 static uintptr_t GLOBAL_STATE_PTR_ADDR;
-static uintptr_t LOCAL_PLAYER_CTL_PTR_ADDR;
 static uintptr_t PAWN_ARRAY_ADDR;
 
 int MEM_FD;
@@ -57,13 +52,11 @@ void read_addr(uint8_t text[], size_t text_len, uintptr_t *addr, uint8_t sig[], 
 void read_addrs(void) {
   const size_t text_len = 70000000;
   uint8_t global_sig[] = {0x7e, 0x18, 0x48, 0x8d, 0x05};
-  uint8_t player_sig[] = {0x83, 0xff, 0xff, 0x74, 0x0b, 0x48, 0x8b, 0x05}; //83 ff ff 74 0b 48 8b 05 
   uint8_t pawn_sig[] = {0x83, 0xf9, 0xff, 0x74, 0x4d, 0x48, 0x8b, 0x35}; //83 f9 ff 74 4d 48 8b 35
   uint8_t *text = malloc(text_len);
   lseek(MEM_FD, (off_t)LIBCLIENT_BASE, SEEK_SET);
   read(MEM_FD, text, text_len);
   read_addr(text, text_len, &GLOBAL_STATE_PTR_ADDR, global_sig, SIZEARR(global_sig));
-  read_addr(text, text_len, &LOCAL_PLAYER_CTL_PTR_ADDR, player_sig, SIZEARR(player_sig));
   read_addr(text, text_len, &PAWN_ARRAY_ADDR, pawn_sig, SIZEARR(pawn_sig));
   free(text);
 }
@@ -88,18 +81,17 @@ uintptr_t get_pawn(uintptr_t ctl) {
 
 static void read_entity(uintptr_t ctl, int id, struct entity *e) {
   e->id = id;
-  uintptr_t local_ctl = read_word(LOCAL_PLAYER_CTL_PTR_ADDR).ptr64;
   uintptr_t pawn = get_pawn(ctl);
-  e->is_local = ctl == local_ctl;
-  e->is_alive = read_word(ctl + 0xa8c).int32; // "IsPlayerAlive"
-  int team = read_word(ctl + 0x55b).bytes[0];  // "GetPlayerTeamNumber"
+  e->is_local = read_word(ctl + 0x908).bytes[0];  // m_bIsLocalPlayerController, or just enum..
+  e->is_alive = read_word(ctl + 0xa9c).int32; // "IsPlayerAlive"
+  int team = read_word(ctl + 0x557).bytes[0];  // "GetPlayerTeamNumber"
   e->team = team == 2 ? 'T' : team == 3 ? 'C' : '_';
   uintptr_t offsets_xyz[] = {0x10, 0x0, 0x30, 0x90};
   uintptr_t ptr_x = hop(MEM_FD, pawn, offsets_xyz, SIZEARR(offsets_xyz));
   e->x = read_word(ptr_x).float32;
   e->y = read_word(ptr_x + 4).float32;
   e->z = read_word(ptr_x + 8).float32;
-  uintptr_t offsets_yaw[] = {0x10, 0x0, 0x4b0, 0x57c};
+  uintptr_t offsets_yaw[] = {0x124c};
   uintptr_t ptr_y = hop(MEM_FD, pawn, offsets_yaw, SIZEARR(offsets_yaw));
   e->yaw = read_word(ptr_y).float32;
   e->pitch = read_word(ptr_y - 4).float32;
