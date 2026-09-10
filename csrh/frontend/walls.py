@@ -29,6 +29,14 @@ class MovableWindow:
         self.toggle(False)
 
     def set(self, x, y, h, w, col):
+        if (
+            round(w) == round(self.w)
+            and round(h) == round(self.h)
+            and round(x - w / 2) == round(self.x - self.w / 2)
+            and round(y - h / 2) == round(self.y - self.h / 2)
+            and col == self.col
+        ):
+            return
         self.x, self.y, self.h, self.w = x, y, h, w
         self.col = col
         self.root.geometry(f"{round(self.w)}x{round(self.h)}+{round(self.x - self.w/2)}+{round(self.y - self.h/2)}")

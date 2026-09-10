@@ -51,7 +51,7 @@ void read_addr(uint8_t text[], size_t text_len, uintptr_t *addr, uint8_t sig[], 
 
 void read_addrs(void) {
   const size_t text_len = 70000000;
-  uint8_t global_sig[] = {0x7e, 0x18, 0x48, 0x8d, 0x05};
+  uint8_t global_sig[] = {0x7e, 0x18, 0x48, 0x8d, 0x05}; // 7e 18 48 8d 05
   uint8_t pawn_sig[] = {0x83, 0xf9, 0xff, 0x74, 0x4d, 0x48, 0x8b, 0x35}; //83 f9 ff 74 4d 48 8b 35
   uint8_t *text = malloc(text_len);
   lseek(MEM_FD, (off_t)LIBCLIENT_BASE, SEEK_SET);
