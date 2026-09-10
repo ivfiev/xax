@@ -123,7 +123,7 @@ try:
 
         root.update_idletasks()
         root.update()
-        sleep(0.001)
+        sleep(0.005)
 except:
     traceback.print_exc()
     root.destroy()

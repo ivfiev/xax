@@ -10,9 +10,9 @@
 #include "math.h"
 
 #define MAX_DEPTH 4
-#define BLOCK_SIZE 2048
+#define BLOCK_SIZE 8192
 #define PRECISION 0.01
-#define IS_PTR(x) (0x500000000000 < (x) && (x) < 0x800000000000)
+#define IS_PTR(x) (0x100000000000 < (x) && (x) < 0xA00000000000)
 
 size_t get_ctls(uintptr_t ctls[]);
 

@@ -115,7 +115,7 @@ size_t read_players(struct entity *players) {
 
 static void print_player(struct entity *player) {
   printf(
-    "%d:%f,%f,%f,%f,%f:%d,%c,%d", 
+    "%d:%.2f,%.2f,%.2f,%.2f,%.2f:%d,%c,%d", 
     player->id, 
     player->x, player->y, player->z, player->yaw, player->pitch, 
     player->is_local, player->team, player->is_alive
@@ -131,7 +131,7 @@ static void main_loop(void) {
       putchar(i < count - 1 ? '|' : '\n');
     }
     fflush(stdout);
-    msleep(10);
+    msleep(15);
   }
 }
 
