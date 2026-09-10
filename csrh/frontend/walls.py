@@ -20,8 +20,6 @@ class MovableWindow:
         self.root.overrideredirect(True)
         self.root.geometry(f"{w}x{h}+{x}+{y}")
         self.root.attributes("-topmost", True)
-        self.canvas = tk.Canvas(self.root, width=w, height=h, bg=None, highlightthickness=0)
-        self.canvas.pack()
         self.x, self.y = x, y
         self.h, self.w = h, w
         self.col = None
@@ -38,9 +36,10 @@ class MovableWindow:
         ):
             return
         self.x, self.y, self.h, self.w = x, y, h, w
-        self.col = col
         self.root.geometry(f"{round(self.w)}x{round(self.h)}+{round(self.x - self.w/2)}+{round(self.y - self.h/2)}")
-        self.canvas.config(width=self.w, height=self.h, bg=col)
+        if col != self.col:
+            self.root.configure(bg=col)
+            self.col = col
 
     def toggle(self, visible):
         if self.visible == visible:
