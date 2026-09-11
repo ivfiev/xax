@@ -16,9 +16,8 @@ if [[ $dm == true ]]; then
   export DEATHMATCH=1
 fi
 
-. ./frontend/.venv/bin/activate
-
 if [[ $aim == true ]]; then
+  . ./frontend/.venv/bin/activate
   sudo ./build/xax csrh | tee >(python frontend/walls.py) | python frontend/aim.py | sudo ./build/mouse
 else
   sudo ./build/xax csrh | python frontend/walls.py
